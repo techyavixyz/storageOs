@@ -1,0 +1,95 @@
+🚀 StorageOS Pro: Setup Guide
+StorageOS Pro is a high-performance disk monitoring and cleanup utility that runs as a standalone desktop application with root-level deletion capabilities.
+
+📋 Prerequisites
+The target machine must be running a Linux distribution with a Desktop Environment (Ubuntu, Mint, Debian, etc.).
+
+1. Install System GUI Dependencies
+Before touching Python, the system needs the GTK and WebKit libraries to render the application window:
+
+Bash
+
+sudo apt update
+sudo apt install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 libcanberra-gtk-module libcanberra-gtk3-module
+Note: If gir1.2-webkit2-4.1 is not found, try gir1.2-webkit2-4.0.
+
+🛠️ Environment Setup
+2. Clone and Prepare Virtual Environment
+To ensure the app can access the system GUI libraries while keeping other dependencies isolated, create a virtual environment with system-site-packages enabled:
+
+Bash
+
+# Create the project directory
+mkdir storageos-app && cd storageos-app
+
+# Create a venv that "borrows" system GTK/GI libraries
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install pywebview fastapi uvicorn psutil pyinstaller
+🏗️ Building the Application
+3. Compile the Binary
+Use PyInstaller to bundle the script into a single executable. We must manually include the gi hooks so the binary can "see" the display server:
+
+Bash
+
+pyinstaller --noconsole --onefile \
+--hidden-import=gi \
+--hidden-import=gi.repository.Gtk \
+--hidden-import=gi.repository.WebKit2 \
+--collect-all webview \
+--name "StorageOS" main.py
+The final binary will be generated in the dist/ folder.
+
+📦 System Installation (The "Chrome" Experience)
+4. Deploy Binary and Icon
+Move the files to standard system locations so the app is recognized globally:
+
+Bash
+
+# Move binary
+sudo cp dist/StorageOS /usr/local/bin/storageos
+sudo chmod +x /usr/local/bin/storageos
+
+# Setup Icon (Example using a generated SVG)
+sudo mkdir -p /usr/share/icons/storageos
+# [Insert your storageos.svg file creation here]
+5. Create the Desktop Launcher
+Create the entry so it appears in the App Menu and requests root permissions via pkexec:
+
+sudo nano /usr/share/applications/storageos.desktop
+
+Paste the following:
+
+Ini, TOML
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=StorageOS Pro
+Comment=Monitor and Clean Disk Space
+# The complex Exec line bridges the GUI through the root password prompt
+Exec=bash -c "xhost +si:localuser:root; pkexec env DISPLAY=:0 XAUTHORITY=/home/$USER/.Xauthority /usr/local/bin/storageos; xhost -si:localuser:root"
+Icon=/usr/share/icons/storageos/icon.svg
+Terminal=false
+Categories=System;Utility;
+fields]
+
+🖥️ Usage
+Open your Application Launcher.
+
+Search for StorageOS Pro.
+
+Enter your password when prompted (required to delete system junk like /var/log).
+
+Click "Explore" to analyze folders or "Delete Permanently" to free up space.
+
+🧹 Uninstallation
+To remove the app completely:
+
+Bash
+
+sudo rm /usr/local/bin/storageos
+sudo rm /usr/share/applications/storageos.desktop
+sudo rm -rf /usr/share/icons/storageos
