@@ -8,21 +8,26 @@ INSTALL_PATH="/usr/local/bin/storageos"
 ICON_PATH="/usr/share/icons/storageos/icon.svg"
 DESKTOP_ENTRY="/usr/share/applications/storageos.desktop"
 
-echo "🚀 Installing StorageOS Pro from techyavixyz/storageOs..."
+echo "--------------------------------------------------"
+echo "🚀 Installing StorageOS Pro from techyavixyz/storageOs"
+echo "--------------------------------------------------"
 
-# 1. Install System Dependencies
+# 1. Repair and Update System Packages
+echo "🛠️ Step 1: Repairing package manager and installing dependencies..."
+sudo dpkg --configure -a
 sudo apt update
+# Added libcanberra-gtk3-module and x11-xserver-utils for better GUI stability
 sudo apt install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
-libcanberra-gtk-module libcanberra-gtk3-module xhost curl -y
+libcanberra-gtk-module libcanberra-gtk3-module x11-xserver-utils xhost curl -y
 
 # 2. Download Binary from GitHub Releases
-# Note: Ensure you have uploaded the 'StorageOS' file to a Release on GitHub
+echo "📥 Step 2: Downloading latest binary..."
 BINARY_URL="https://github.com/$GITHUB_USER/$REPO_NAME/releases/latest/download/$BINARY_NAME"
-echo "📥 Downloading binary..."
 sudo curl -L "$BINARY_URL" -o "$INSTALL_PATH"
 sudo chmod +x "$INSTALL_PATH"
 
 # 3. Create SVG Icon
+echo "🎨 Step 3: Creating application icon..."
 sudo mkdir -p /usr/share/icons/storageos
 cat <<EOF | sudo tee "$ICON_PATH" > /dev/null
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
@@ -33,18 +38,30 @@ cat <<EOF | sudo tee "$ICON_PATH" > /dev/null
 </svg>
 EOF
 
-# 4. Create Desktop Launcher
+# 4. Create Desktop Launcher (The "Bypass" Version)
+echo "🖥️ Step 4: Creating desktop launcher..."
+# FONTCONFIG_FILE=/dev/null fixes the "out of memory" font error
+# XAUTHORITY path is dynamically detected to support different user home setups
 cat <<EOF | sudo tee "$DESKTOP_ENTRY" > /dev/null
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=StorageOS Pro
 Comment=Monitor and Clean Disk Space
-Exec=bash -c "xhost +si:localuser:root; pkexec env DISPLAY=:0 XAUTHORITY=/home/\$USER/.Xauthority $INSTALL_PATH; xhost -si:localuser:root"
+Exec=bash -c "xhost +si:localuser:root; pkexec env DISPLAY=:0 XAUTHORITY=\${XAUTHORITY:-\$HOME/.Xauthority} FONTCONFIG_FILE=/etc/fonts/fonts.conf $INSTALL_PATH; xhost -si:localuser:root"
 Icon=$ICON_PATH
 Terminal=false
 Categories=System;Utility;
+Keywords=disk;storage;clean;monitor;
 EOF
 
+# 5. Clean Caches
+echo "🔄 Step 5: Refreshing font and desktop caches..."
 sudo update-desktop-database
-echo "✅ Installation Complete! Search for 'StorageOS Pro' in your menu."
+sudo rm -rf /var/cache/fontconfig/*
+sudo fc-cache -f -v > /dev/null
+
+echo "--------------------------------------------------"
+echo "✅ Installation Complete!"
+echo "✨ Search for 'StorageOS Pro' in your app menu to start."
+echo "--------------------------------------------------"
