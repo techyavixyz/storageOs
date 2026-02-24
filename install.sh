@@ -9,25 +9,24 @@ ICON_PATH="/usr/share/icons/storageos/icon.svg"
 DESKTOP_ENTRY="/usr/share/applications/storageos.desktop"
 
 echo "--------------------------------------------------"
-echo "🚀 Installing StorageOS Pro from techyavixyz/storageOs"
+echo "🚀 Installing StorageOS Pro (Stable Version)"
 echo "--------------------------------------------------"
 
-# 1. Repair and Update System Packages
-echo "🛠️ Step 1: Repairing package manager and installing dependencies..."
+# 1. Repair and Install Dependencies
+echo "🛠️ Step 1: Repairing packages and installing GUI dependencies..."
 sudo dpkg --configure -a
 sudo apt update
-# Added libcanberra-gtk3-module and x11-xserver-utils for better GUI stability
 sudo apt install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
 libcanberra-gtk-module libcanberra-gtk3-module x11-xserver-utils xhost curl -y
 
-# 2. Download Binary from GitHub Releases
-echo "📥 Step 2: Downloading latest binary..."
+# 2. Download Binary from GitHub
+echo "📥 Step 2: Downloading StorageOS binary..."
 BINARY_URL="https://github.com/$GITHUB_USER/$REPO_NAME/releases/latest/download/$BINARY_NAME"
 sudo curl -L "$BINARY_URL" -o "$INSTALL_PATH"
 sudo chmod +x "$INSTALL_PATH"
 
 # 3. Create SVG Icon
-echo "🎨 Step 3: Creating application icon..."
+echo "🎨 Step 3: Setting up application icon..."
 sudo mkdir -p /usr/share/icons/storageos
 cat <<EOF | sudo tee "$ICON_PATH" > /dev/null
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
@@ -38,10 +37,10 @@ cat <<EOF | sudo tee "$ICON_PATH" > /dev/null
 </svg>
 EOF
 
-# 4. Create Desktop Launcher (The "Bypass" Version)
-echo "🖥️ Step 4: Creating desktop launcher..."
-# FONTCONFIG_FILE=/dev/null fixes the "out of memory" font error
-# XAUTHORITY path is dynamically detected to support different user home setups
+# 4. Create Desktop Launcher (The Root/GUI Bridge)
+echo "🖥️ Step 4: Configuring Desktop Menu integration..."
+# This Exec line is the most important part for fixing your 'Permission Denied' error.
+# It uses pkexec to ask for your password and passes the correct Display/Font settings to root.
 cat <<EOF | sudo tee "$DESKTOP_ENTRY" > /dev/null
 [Desktop Entry]
 Version=1.0
@@ -55,13 +54,12 @@ Categories=System;Utility;
 Keywords=disk;storage;clean;monitor;
 EOF
 
-# 5. Clean Caches
-echo "🔄 Step 5: Refreshing font and desktop caches..."
+# 5. Final Refresh
+echo "🔄 Step 5: Refreshing system caches..."
 sudo update-desktop-database
 sudo rm -rf /var/cache/fontconfig/*
 sudo fc-cache -f -v > /dev/null
 
 echo "--------------------------------------------------"
-echo "✅ Installation Complete!"
-echo "✨ Search for 'StorageOS Pro' in your app menu to start."
+echo "✅ Done! PLEASE START THE APP FROM YOUR APP MENU."
 echo "--------------------------------------------------"
